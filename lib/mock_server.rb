@@ -6,8 +6,9 @@ class MockServer
     use Rack::ShowExceptions
   end
 
-  def initialize(port = 4000, &block)
+  def initialize(port = 4000, log_file = "/dev/null", &block)
     @port = port
+    @log_file = log_file
 
     @app = Class.new(Sinatra::Base)
     @app.class_eval(&block)
@@ -15,7 +16,7 @@ class MockServer
 
   def start
     Thread.new do
-      with_quiet_logger do |logger|
+      with_logger do |logger|
         Rack::Handler::WEBrick.run(@app, :Port => @port, :Logger => logger, :AccessLog => [])
       end
     end
@@ -32,8 +33,8 @@ class MockServer
   end
 
 protected
-  def with_quiet_logger
-    io = File.open("/dev/null", "w")
+  def with_logger
+    io = File.open(@log_file, "w")
     yield(::Logger.new(io))
   ensure
     io.close
